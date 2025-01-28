@@ -314,9 +314,8 @@ void run()
 }
 }
 
-
-/// luata de pe infoarena de la mine dar nici nu compileaza lol (si e in general f dubioasa)
 namespace domino{
+    /// luata de pe infoarena de la mine. solutie extrem de dubioasa sincer.
 using namespace std;
 ifstream fin("domino.in");
 ofstream fout("domino.out");
@@ -381,7 +380,6 @@ int run()
     return 0;
 }
 }
-
 
 namespace hamilton{
 
@@ -480,7 +478,18 @@ namespace hamilton{
 }
 
 
+/*******************
+MOMENTAN LIPSESC:
+    - muchii / noduri critice.
+    - componente tare conexe.
+    - APM kruskal / prim.
+    - Belman Ford.
+    - FLUX.
+    - euler normal la cap.
+    - teorema celor 6/5 culori.
+    - dist levenstein (usor).
 
+*******************/
 int main()
 {
     hamilton::run();
