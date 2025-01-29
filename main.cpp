@@ -319,8 +319,6 @@ namespace domino{
 using namespace std;
 ifstream fin("domino.in");
 ofstream fout("domino.out");
-#define cin fin
-#define cout fout
 int const N =50005;
 int m;
 struct info
@@ -349,16 +347,16 @@ void dfs(int node,int pos=-1,bool type=false)
         dfs(del.nod,del.pos,!del.intors);
     }
     if(pos != -1)
-        cout << pos <<' '<< type <<'\n';
+        fout << pos <<' '<< type <<'\n';
 }
 int run()
 {
-    cin>>m;
+    fin>>m;
     int alfa = -1;
     for(int i=0;i<m;i++)
     {
         int x,y;
-        cin >> x >> y;
+        fin >> x >> y;
         v[x].emplace(y,i+1,false);
         v[y].emplace(x,i+1,true);
         alfa = x;
@@ -369,10 +367,10 @@ int run()
         {
             if(nr1 == -1) nr1 = i;
             else if(nr2 == -1)nr2 = i;
-            else{cout << 0;return 0;}
+            else{fout << 0;return 0;}
         }
-    if(nr2 == -1 && nr1!= -1){cout << 0;return 0;}
-    cout << "1\n";
+    if(nr2 == -1 && nr1!= -1){fout << 0;return 0;}
+    fout << "1\n";
     if(nr1==-1)
         dfs(alfa);
     else
@@ -382,7 +380,6 @@ int run()
 }
 
 namespace hamilton{
-
     #ifdef fakeFILES
     std::ifstream fin("input.in");
     std::ofstream fout("input.out");
@@ -477,20 +474,106 @@ namespace hamilton{
 
 }
 
+namespace flux{
+    #ifdef fakeFILES
+    std::ifstream fin("input.in");
+    std::ofstream fout("input.out");
+    #else
+    std::ifstream fin("maxflow.in");
+    std::ofstream fout("maxflow.out");
+    #endif
+    using namespace std;
+    int n,fluxRez;
+    int const N = 1025, INF = 1e9;
+    vector<int> g[N];
+    int cost[N][N], flux[N][N];
 
+    inline int liber(const int &nod1,const int &nod2){
+        return cost[nod1][nod2] - flux[nod1][nod2];
+    }
+    vector<int> bfs(int start, int destination){
+        queue <int>q;
+        q.push(start);
+        int d[N];
+        for(int i = 1; i <=n; i++)
+            d[i] = 0;
+        while(q.size())
+        {
+            int node=q.front();
+            vector <int>::iterator it;
+            for(auto it=g[node].begin();it!=g[node].end();it++)
+            {
+                if(d[*it] || *it == start || flux[node][*it] == cost[node][*it])
+                    continue;
+                d[*it]=node;
+
+                if(*it == destination){
+                    vector<int> rez;
+                    while(destination){
+                       rez.push_back(destination);
+                       destination = d[destination];
+                    }
+                    reverse(rez.begin(),rez.end());
+                    return rez;
+                }
+                q.push(*it);
+
+            }
+            q.pop();
+        }
+        return vector<int>();
+
+    }
+
+    void maxFlow(int source, int destination){
+        vector<int> path;
+        path = bfs(source,destination);
+        while(!path.empty()){
+
+            int mn = INF;
+            for(size_t i = 1; i < path.size(); i++){
+                mn = min(mn, liber(path[i-1],path[i]));
+            }
+            fluxRez += mn;
+            for(size_t i = 1; i < path.size(); i++){
+                flux[path[i-1]][path[i]] += mn;
+                cost[path[i]][path[i-1]] += mn;
+            }
+            path.clear();
+            path = bfs(source,destination);
+        }
+        fout <<fluxRez;
+    }
+
+    void run(){
+
+        int m;
+        fin >> n >> m;
+
+        while(m--){
+            int x,y,c;
+            fin >> x >> y >> c;
+
+            cost[x][y] += c;
+            g[x].push_back(y);
+            g[y].push_back(x); /// y->x edge is the reverse edge which has capacity 0 for now.
+        }
+        /// 1 is source, n is destination
+        maxFlow(1,n);
+    }
+}
 /*******************
 MOMENTAN LIPSESC:
     - muchii / noduri critice.
     - componente tare conexe.
     - APM kruskal / prim.
     - Belman Ford.
-    - FLUX.
+    - FLUX de cost max;
     - euler normal la cap.
     - teorema celor 6/5 culori.
     - dist levenstein (usor).
-
 *******************/
 int main()
 {
-    hamilton::run();
+    flux::run();
 }
