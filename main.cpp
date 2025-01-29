@@ -562,18 +562,212 @@ namespace flux{
         maxFlow(1,n);
     }
 }
+
+
+namespace fluxMaxCostMin{
+    using namespace std;
+    #ifdef fakeFILES
+    std::ifstream fin("input.in");
+    std::ofstream fout("input.out");
+    #else
+    std::ifstream fin("fmcm.in");
+    std::ofstream fout("fmcm.out");
+    #endif
+
+    int const MAXN = 355, INF = 1e9;
+    int N, M, S, D; /// nr vertices, edges, start and destination.
+    int C[MAXN][MAXN], Cst[MAXN][MAXN]; /// capacity and cost
+    vector<int> g[MAXN]; /// graph
+    int F, FCst; /// flow and flow cost.
+
+    int old_d[MAXN]; /// distance in graph without capacities.
+
+    int d[MAXN], real_d[MAXN], p[MAXN];/// distance (positive), real distance, parent
+    priority_queue<pair<int, int>, vector<pair<int, int> >, greater<pair<int, int> > > H;
+    inline bool dijkstra()
+    {
+        fill(d,d+MAXN,INF);
+        d[S] = 0; real_d[S] = 0;
+        H.emplace(d[S], S);
+
+        while(!H.empty())
+        {
+            int cst = H.top().first, nod = H.top().second;
+            H.pop();
+
+            if (d[nod] < cst)
+                continue;
+
+            vector<int> :: iterator it;
+            for (it = g[nod].begin(); it != g[nod].end(); it++)
+                if (C[nod][*it]) /// if it has remaning capacity
+                {
+                    int new_d = d[nod] + Cst[nod][*it]; /// normal Dijkstra
+                    new_d+= old_d[nod] - old_d[*it]; /// to make sure it's positive.
+                    if (new_d < d[*it])
+                    {
+                        d[*it] = new_d;
+                        real_d[*it] = real_d[nod] + Cst[nod][*it];
+                        p[*it] = nod;
+                        H.emplace(d[*it], *it);
+                    }
+                }
+        }
+        /// void* memcpy( void* dest, const void* src, std::size_t count );
+        memcpy(old_d, real_d, sizeof(d)); /// ???? saves time ...
+
+
+        /// normal flow behaviour:
+        if (d[D] == INF)
+            return false;
+
+        int Min = INF, curCst = 0;
+        for (int aux = D; aux != S; aux = p[aux])
+            Min = min(Min, C[p[aux]][aux]),
+            curCst += Cst[p[aux]][aux];
+
+        F += Min;
+        FCst += Min * real_d[D];
+
+        for (int aux = D; aux != S; aux = p[aux])
+            C[p[aux]][aux] -= Min,
+            C[aux][p[aux]] += Min;
+
+        return true;
+    }
+
+    bool vizQ[MAXN];
+    queue<int> Q; /// order of updated nodes.
+    inline bool bellmanFord()
+    { /// bellman ford with queue. (doesn't check for negative cycle!)
+        fill(old_d,old_d+MAXN,INF);
+        old_d[S] = 0;
+        Q.push(S);
+        vizQ[S] = true;
+        for (; !Q.empty(); Q.pop())
+        {
+            vector<int> :: iterator it;
+            int i = Q.front();
+            vizQ[i] = false;
+
+            for (it = g[i].begin(); it != g[i].end(); it++)
+                if (C[i][*it])
+                {
+                    if (old_d[i] + Cst[i][*it] >= old_d[*it])
+                        continue;
+
+                    old_d[*it] = old_d[i] + Cst[i][*it];
+                    if (vizQ[*it])
+                        continue;
+
+                    vizQ[*it] = true;
+                    Q.push(*it);
+                }
+        }
+
+        if (old_d[D] == INF)
+            return false;
+
+        return true;
+    }
+
+    int run()
+    {
+        fin >> N >> M >> S >> D;
+        while(M--)
+        {
+            int x, y;
+            fin >> x >> y;
+            g[x].push_back(y);
+            g[y].push_back(x);
+            fin >> C[x][y] >> Cst[x][y];
+            Cst[y][x] = -Cst[x][y];
+        }
+
+        F = FCst = 0;
+        bellmanFord();
+        for (; dijkstra(); ); /// the flow algorithm :)
+
+        fout << FCst;
+        return 0;
+    }
+}
+
+
+namespace BellmanFord{
+    using namespace std;
+    #ifdef fakeFILES
+    std::ifstream fin("input.in");
+    std::ofstream fout("input.out");
+    #else
+    std::ifstream fin("bellmanford.in");
+    std::ofstream fout("bellmanford.out");
+    #endif
+    int const N = 50005, INF = 1e9;
+    int n;
+    std::vector< pair<int,int> > g[N];
+
+    bool bellman(int start = 1){
+        int dist[N],dad[N];
+        fill(dist, dist+N, INF);
+        fill(dad,dad+N,0);
+        dad[start] = start;
+        dist[start] = 0;
+
+        set<int> changed_nodes_old,changed_nodes_new;
+        changed_nodes_new.insert(start);
+
+        for(int i = 0 ; i <= n + 1 ; i++){
+
+            changed_nodes_old = changed_nodes_new;
+            changed_nodes_new.clear();
+            /// relax all edges:
+            for(int node:changed_nodes_old){
+                for(auto edge:g[node]){
+                    int v = edge.first; /// neighbour
+                    int cost = edge.second;
+
+                    if(dist[node] + cost < dist[v]){
+                        changed_nodes_new.insert(v);
+                        dist[v] = dist[node] + cost;
+                        dad[v] = node;
+                    }
+                }
+            }
+        }
+        if(changed_nodes_new.size())
+            return false;
+        for(int node = 1; node <= n ; node ++){
+            if(node != start)
+                fout << dist[node] << ' ';
+        }
+        return true;
+    }
+    void run(){
+        int m;
+        fin >> n >> m;
+
+        while(m--){
+            int x,y,c;
+            fin >> x >> y >> c;
+            g[x].emplace_back(y,c);
+        }
+
+        if(!bellman(1))
+            fout << "Ciclu negativ!";
+    }
+}
+
 /*******************
 MOMENTAN LIPSESC:
     - muchii / noduri critice.
     - componente tare conexe.
     - APM kruskal / prim.
-    - Belman Ford.
-    - FLUX de cost max;
     - euler normal la cap.
     - teorema celor 6/5 culori.
     - dist levenstein (usor).
 *******************/
 int main()
 {
-    flux::run();
+    fluxMaxCostMin::run();
 }
